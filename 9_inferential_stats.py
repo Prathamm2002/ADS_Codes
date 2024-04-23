@@ -1,35 +1,61 @@
+import numpy as np
 import pandas as pd
-population = pd.read_csv('diamonds.csv')
-# has cols like carat, cut, color, clarity, depth, table, price, x, y, z
-sample = population.sample(n=40)
+import seaborn as sns
+import matplotlib.pyplot as plt
+from scipy import stats
 
-# metrics for formula
-sample_mean = sample['price'].mean()
-# is 3104
+# Load the dataset from the provided file
+file_path = "california_housing_train.csv"
+df = pd.read_csv(file_path)
 
-sample_std_deviation = sample['price'].std()
-population_mean = population['price'].mean()
-population_std_deviation = population['price'].std()
+# Display the first few rows of the dataset
+print("First few rows of the dataset:")
+print(df.head())
 
+# Summary statistics
+print("\nSummary statistics:")
+print(df.describe())
 
-# H0: Average price of diamonds is 3200
-# HA: Average price of diamonds is not 3200
+# Normal distribution
+sns.histplot(df['median_house_value'], kde=True, color='blue')
+plt.title('Distribution of Housing Prices (Normal)')
+plt.xlabel('Price')
+plt.ylabel('Frequency')
+plt.show()
+
+# Poisson distribution
+# Generate Poisson distributed data
+poisson_data = np.random.poisson(lam=5, size=1000)
+sns.histplot(poisson_data, kde=True, color='green')
+plt.title('Poisson Distribution')
+plt.xlabel('Value')
+plt.ylabel('Frequency')
+plt.show()
+
+# Confidence Interval
+confidence_interval = stats.norm.interval(0.95, loc=np.mean(df['median_house_value']), scale=np.std(df['median_house_value']))
+print("\nConfidence Interval for the mean of housing prices (95%):", confidence_interval)
 
 # Z-test
-import math 
-Z = (sample_mean-population_mean)/(population_std_deviation/math.sqrt(40))
-# Z = -1.3131 
-
-critical_value = +-1.64
-# Z lies between critical value, hence do not reject H0
+mean_price = df['median_house_value'].mean()
+std_price = df['median_house_value'].std()
+n = len(df['median_house_value'])
+z_stat = (mean_price - 3) / (std_price / np.sqrt(n))
+p_value = 1 - stats.norm.cdf(z_stat)
+print("\nZ-test:")
+print("Z-statistic:", z_stat)
+print("P-value:", p_value)
 
 # T-test
-sample = population.sample(20)
-sample_mean = sample['price'].mean()
-sample_std_deviation = sample['price'].std()
+t_stat, p_value = stats.ttest_1samp(df['median_house_value'], popmean=3)
+print("\nT-test:")
+print("T-statistic:", t_stat)
+print("P-value:", p_value)
 
-t_stat = (sample_mean-population_mean)/(sample_std_deviation/math.sqrt(20))
-# t_stat = -1.151
-# t_statistic < t_table we reject null hypothesis
-
-# z test when pop size > 30  and t test will be when  pop size<30
+# Example: One-way ANOVA (hypothetical)
+df['region'] = np.random.choice(['A', 'B', 'C'], size=len(df))
+grouped_data = df.groupby('region')['median_house_value'].apply(list)
+f_stat, p_value = stats.f_oneway(*grouped_data)
+print("\nANOVA:")
+print("F-statistic:", f_stat)
+print("P-value:", p_value)

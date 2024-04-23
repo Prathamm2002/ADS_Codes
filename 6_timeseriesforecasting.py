@@ -1,94 +1,90 @@
-import numpy as np
 import pandas as pd
-import scipy
-import statsmodels.api as sm
 import matplotlib.pyplot as plt
-import seaborn as sns
-from statsmodels import tsa
+from statsmodels.tsa.seasonal import seasonal_decompose
+from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
+from statsmodels.tsa.stattools import adfuller
+from sklearn.metrics import mean_absolute_error, mean_squared_error
+import numpy as np
+from sklearn.linear_model import LinearRegression
+from statsmodels.tsa.arima.model import ARIMA
 
 
-df = pd.read_csv("supermarket_sales - Sheet1.csv")
-df.head()
+# Load the dataset
+file_path = 'california_housing_train.csv'
+df = pd.read_csv(file_path)
 
+# Prepare data for time series analysis
+df['date'] = pd.date_range(start='1/1/1990', periods=len(df), freq='D')
+df.set_index('date', inplace=True)
 
-df['Date'] = pd.to_datetime(df['Date'])
-df.head(2)
-
-
-data = df.loc[df['City'] == 'Yangon']
-r_col = ['Invoice ID', 'Branch', 'City', 'Customer type', 'Gender',
-       'Product line', 'Unit price', 'Quantity', 'Tax 5%',
-       'Time', 'Payment', 'cogs', 'gross margin percentage', 'gross income',
-       'Rating',]
-
-
-data.drop(r_col, axis =1 , inplace=True)
-data.head()
-
-
-data = data[["Date","Total"]]
-data = data.sort_values('Date')
-data.set_index('Date', inplace=True)
-data.head()
-df1=data
-
-
-data.plot(figsize=(15,6),legend=True)
-plt.ylabel("Sales",fontsize=18)
-plt.xlabel("Date",fontsize=18)
-plt.title("Date Vs Sales",fontsize=20)
+# Plot the time series
+plt.figure(figsize=(12, 6))
+plt.plot(df['median_house_value'])
+plt.title('Median House Value Over Time')
+plt.xlabel('Date')
+plt.ylabel('Median House Value')
 plt.show()
 
+# Decompose the time series
+decomposition = seasonal_decompose(df['median_house_value'], model='additive', period=365)
+trend = decomposition.trend
+seasonal = decomposition.seasonal
+residual = decomposition.resid
 
-from statsmodels.tsa.stattools import adfuller
+# Plot decomposed components
+decomposition.plot()
+plt.show()
 
-result = adfuller(data['Total'])
-print('ADF Statistic: ', result[0])
-print('p-value: ', result[1])
+# Plot ACF and PACF
+fig, ax = plt.subplots(2, 1, figsize=(12, 8))
+plot_acf(df['median_house_value'], lags=50, ax=ax[0])
+plot_pacf(df['median_house_value'], lags=50, ax=ax[1])
+plt.show()
 
+# Perform Augmented Dickey-Fuller test
+adf_result = adfuller(df['median_house_value'])
+print('ADF Statistic:', adf_result[0])
+print('p-value:', adf_result[1])
+print('Critical Values:')
+for key, value in adf_result[4].items():
+    print(f'   {key}: {value}')
 
-data = data['Total'].resample('D').mean()
-data.head()
+# Define forecasting functions
+def linear_regression_forecast(data, window):
+    X = pd.DataFrame({'t': range(1, len(data) + 1)})
+    y = data.values
+    model = LinearRegression()
+    model.fit(X[-window:], y[-window:])
+    return model.predict([[len(data) + 1]])[0]
 
+def moving_average_forecast(data, window):
+    return data.rolling(window=window).mean().iloc[-1]
 
-from statsmodels.tsa.seasonal import seasonal_decompose
+def arima_forecast(data, order):
+    model = ARIMA(data, order=order)
+    model_fit = model.fit()
+    return model_fit.forecast()[0]
 
-decompose_result_mult = seasonal_decompose(data, model="multiplicative")
+# Define window size and ARIMA order
+window_size = 30
+arima_order = (5, 1, 0)
 
-trend = decompose_result_mult.trend
-seasonal = decompose_result_mult.seasonal
-residual = decompose_result_mult.resid
+# Perform forecasts
+linear_regression_forecast_value = linear_regression_forecast(df['median_house_value'], window_size)
+moving_average_forecast_value = moving_average_forecast(df['median_house_value'], window_size)
+arima_forecast_value = arima_forecast(df['median_house_value'], order=arima_order)
 
-decompose_result_mult.plot()
+# Compute evaluation metrics
+actual_value = df['median_house_value'].iloc[-1]
+linear_regression_mae = mean_absolute_error([actual_value], [linear_regression_forecast_value])
+moving_average_mae = mean_absolute_error([actual_value], [moving_average_forecast_value])
+arima_mae = mean_absolute_error([actual_value], [arima_forecast_value])
 
-
-from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
-fig = sm.graphics.tsa.plot_acf(data, lags=40)
-
-
-fig = sm.graphics.tsa.plot_pacf(data, lags=40)
-
-
-from sklearn.model_selection import train_test_split
-inputs = df1.index
-target = df1['Total'].copy()
-X_train, X_test, y_train, y_test = train_test_split(inputs,target, test_size=1/3, random_state=0)
-
-
-from statsmodels.tsa.arima.model import ARIMA
-from sklearn.metrics import mean_absolute_error, mean_squared_error, mean_absolute_percentage_error
-from math import sqrt
-
-model = ARIMA(y_train, order=(0,3,1))
-model_fit = model.fit()
-
-
-predictions = model_fit.forecast(len(y_test))
-
-
-mse = mean_squared_error(y_test, predictions)
-mae = mean_absolute_error(y_test, predictions)
-rmse = sqrt(mse)
-print(mse)
-print(mae)
-print(rmse)
+# Print evaluation metrics
+print("Evaluation Metrics:")
+print("Linear Regression:")
+print("MAE:", linear_regression_mae)
+print("Moving Average:")
+print("MAE:", moving_average_mae)
+print("ARIMA:")
+print("MAE:", arima_mae)

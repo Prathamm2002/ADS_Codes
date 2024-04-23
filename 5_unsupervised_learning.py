@@ -8,6 +8,8 @@ df = pd.read_csv(file_path)
 
 # Prepare data for clustering
 X = df.drop('median_house_value', axis=1)
+
+# Formula to normalize data
 X = (X - X.mean()) / X.std()
 
 # Define the number of clusters
