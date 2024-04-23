@@ -2,7 +2,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import pandas as pd
 
-file_path = 'path_to_your_file/california_housing_train.csv'
+file_path = 'california_housing_train.csv'
 df = pd.read_csv(file_path)
 
 print("Dataset printed for testing: \n")

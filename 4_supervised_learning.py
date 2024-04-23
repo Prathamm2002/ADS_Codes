@@ -1,102 +1,48 @@
-from sklearn.metrics import mean_squared_error
-from sklearn.metrics import r2_score
-from sklearn.linear_model import LinearRegression
-from scipy.stats import pearsonr
 import pandas as pd
-df = pd.read_csv("london_weather.csv")
-df.head()
-
-df = df.fillna(df.mean())
-# print("After filling NUll values")
-# print(df.head())
-
-df.describe()
-
-sunshine_median = df['sunshine'].median()
-# In sunshine we want only 0/1
-# currently it has a range of values 0 to some int
-transform = lambda x: 1 if x>=sunshine_median else 0
-# Apply the transformation to the "sunshine" column
-df['sunshine'] = df['sunshine'].apply(transform)
-
-X = df.drop(['sunshine', 'date'], axis='columns')
-# normalize all cols
-from sklearn.preprocessing import MinMaxScaler
-scaler = MinMaxScaler()
-X_sc = scaler.fit_transform(X)
-print(X_sc)     # numpy array
-df_scaled = pd.DataFrame(X_sc, columns=X.columns)
-print(df_scaled.head())
-
-# classification
 from sklearn.model_selection import train_test_split
-from sklearn.neighbors import KNeighborsClassifier
-target = df['sunshine']
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score, precision_score, recall_score, roc_auc_score, f1_score, confusion_matrix
 
-X_train, X_test, y_train, y_test = train_test_split(df_scaled, target, train_size=0.8)
+# Load the dataset
+file_path = 'Churn_Modelling.csv'
+df = pd.read_csv(file_path)
 
-model = KNeighborsClassifier()
+# Selecting features and target variable
+X = df[['CreditScore', 'Age', 'Tenure', 'Balance', 'NumOfProducts', 'HasCrCard', 'IsActiveMember', 'EstimatedSalary']]
+y = df['Exited']
+
+# Splitting the dataset into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Initialize and train the logistic regression model
+model = LogisticRegression()
 model.fit(X_train, y_train)
+
+# Predict the target variable on the test set
 y_pred = model.predict(X_test)
 
+# Evaluate the model
+accuracy = accuracy_score(y_test, y_pred)
+print(f"Accuracy: {accuracy}")
 
-from sklearn.metrics import confusion_matrix, classification_report, accuracy_score, roc_auc_score
+precision = precision_score(y_test, y_pred)
+print(f"Precision: {precision}")
 
-print(classification_report(y_test, y_pred))
-print(confusion_matrix(y_test, y_pred))
+recall = recall_score(y_test, y_pred)
+print(f"Recall: {recall}")
 
-tn, fp, fn, tp = confusion_matrix(y_test, y_pred).ravel()   # flattened array
-print("True Negatives {}".format(tn))
-print("False Negatives {}".format(fn))
-print("True Positives {}".format(tp))
-print("False Positives {}".format(fp))
-print("Accuracy:", accuracy_score(y_test, y_pred))
-print("Error:", 1-accuracy_score(y_test, y_pred))
-print("ROC area under the curve score:", roc_auc_score(y_test, y_pred))
+roc_auc = roc_auc_score(y_test, y_pred)
+print(f"ROC AUC: {roc_auc}")
 
-specificity = tp/(tp+fn)
-print("Specificity:", specificity)
-print("False Positive Rate: ", 1-specificity)
+f1 = f1_score(y_test, y_pred)
+print(f"F1 Score: {f1}")
 
-# plotting ROC curve
-from sklearn.metrics import roc_curve
-import matplotlib.pyplot as plt 
-fpr, tpr, thresholds = roc_curve(y_test, y_pred)
-plt.plot(fpr, tpr)
-plt.xlabel('False Positive Rate')
-plt.ylabel('True Positive Rate')
-plt.title('ROC Curve')
-plt.show()
-
-# doing linear reg for Karl pearson, R^2, MSE, RMSE, MAE
-X = df_scaled.min_temp
-y = df_scaled.max_temp
-# Karl pearson (has to be before re-shaping)
-corr, _ = pearsonr(X, y)
-print("Karl Pearson's coefficient of correlation:", corr)
-
-# R-squared
-reg = LinearRegression()
-X = X.values
-X = X.reshape(-1, 1)
-reg.fit(X, y)
-y_pred = reg.predict(X)
-r_squared = r2_score(y, y_pred)
-print("R-squared:", r_squared)
-
-# MSE
-mse = mean_squared_error(y, y_pred)
-print("Mean Squared Error:", mse)
-
-import math
-
-rmse = math.sqrt(mse)
-print("RMSE:", rmse)
+# Additional metrics
+tn, fp, fn, tp = confusion_matrix(y_test, y_pred).ravel()
+specificity = tn / (tn + fp)
+print(f"Specificity: {specificity}")
 
 
-# MAE
-from sklearn.metrics import mean_absolute_error
-mae = mean_absolute_error(y, y_pred)
-print("MAE:", mae)
-
-print("MAPE:", mae*100, end="%")
+# Square root of Recall*Specificity
+geometric_mean = (recall * specificity) ** 0.5
+print(f"Geometric Mean: {geometric_mean}")

@@ -132,9 +132,9 @@ sns.boxplot(df)
 plt.title('Box-and-Whisker Plot')
 plt.show()
 
-# Scatter Plot
+# Scatter Matrix
 sns.pairplot(df)
-plt.title('Scatter Plot')
+plt.title('Scatter Matrix')
 plt.show()
 
 # Correlation Matrix
