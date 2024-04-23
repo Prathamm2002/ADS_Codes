@@ -1,53 +1,55 @@
-'''
-#categorical to numerical 
-
-from sklearn.preprocessing import OrdinalEncoder
-
-data=df
-oe =OrdinalEncoder()
-result = oe.fit_transform(data)
-print(result)
-'''
-
+# Import necessary libraries
 import pandas as pd
-df = pd.read_csv("london_weather.csv")
-df.drop(['cloud_cover', 'global_radiation'], axis='columns')
-print(df.head())
+from sklearn.impute import KNNImputer
 
-'''
-Filling with means
-means = df.mean()
-# Fill in missing values with the column mean
+# Load the California housing training dataset
+file_path = 'california_housing_train.csv'
+df = pd.read_csv(file_path)
 
-df = df['cloud_cover'].fillna(df['cloud_cover'].means)
-do same with median and mode and arbitratry values
+# Deletion of rows with missing data
+df_notnull = df.dropna()
+print("Deletion of rows with missing data:\n", df_notnull)
 
-df.ffill() i.e forwrad fill 
-'''
+# Mean imputation
+df_mean_imputed = df.fillna(df.mean())
+print("\nMean Imputation:\n", df_mean_imputed)
 
-import numpy as np
-# random sample imputation
-# curl -L -O https://github.com/ShyrenMore/sem08/archive/main.zip
-df2 = df.copy()
-missing = df2.isnull().sum()
-print(missing)
-for col in df2.columns:
-    if(missing[col] > 0):
-        values = df2[col].dropna().values
-        # genereate random value from 1 to values?
-        imputed_value = np.random.choice(values,size=missing[col])
-        df2[col].loc[df2[col].isnull()] = imputed_value
+# Median imputation
+df_median_imputed = df.fillna(df.median())
+print("\nMedian Imputation:\n", df_median_imputed)
 
-print(df2.head())
+# Mode imputation
+df_mode_imputed = df.fillna(df.mode().iloc[0])
+print("\nMode Imputation:\n", df_mode_imputed)
+
+# Arbitrary value imputation
+arbitrary_value = 99999
+df_arbitrary_imputed = df.fillna(arbitrary_value)
+print("\nArbitrary Value Imputation:\n", df_arbitrary_imputed)
+
+# End of tail imputation
+end_of_tail_value = df['total_bedrooms'].mean() + 3 * df['total_bedrooms'].std()  
+# Example: Use 3 standard deviations from the mean
+df_end_of_tail_imputed = df.fillna(end_of_tail_value)
+print("\nEnd of Tail Imputation:\n", df_end_of_tail_imputed)
+
+# Random sample imputation
+random_sample = df['total_bedrooms'].dropna().sample(df['total_bedrooms'].isnull().sum(), random_state=42)
+df_random_sample_imputed = df.copy()
+df_random_sample_imputed.loc[df['total_bedrooms'].isnull(), 'total_bedrooms'] = random_sample.values
+print("\nRandom Sample Imputation:\n", df_random_sample_imputed)
 
 
-# frequest category imputation
-df3 = df.copy()
-missing = df3.isnull().sum()
-# Perform frequent category imputation for each column with missing values
-for col in df3.columns:
-    if missing[col] > 0:
-        # Find the most frequent category in the column
-        most_frequent = df3[col].mode()[0]
-        df3[col].fillna(most_frequent, inplace=True)
-df3.head()
+# Frequent category imputation
+frequent_category = df['total_rooms'].mode()[0]
+df_frequent_category_imputed = df.fillna({'total_rooms': frequent_category})
+print("\nFrequent Category Imputation:\n", df_frequent_category_imputed)
+
+# Adding a new category as "Missing"
+df_missing_category_imputed = df.fillna({'total_rooms': 'Missing'})
+print("\nMissing Category Imputation:\n", df_missing_category_imputed)
+
+# Regression imputation
+knn_imputer = KNNImputer()
+df_regression_imputed = pd.DataFrame(knn_imputer.fit_transform(df), columns=df.columns)
+print("\nRegression Imputation:\n", df_regression_imputed)

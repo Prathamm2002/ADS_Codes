@@ -6,14 +6,11 @@ import seaborn as sns
 import scipy.stats as stats
 import statsmodels.api as sm
 
-# Installing necessary libraries
-# Uncomment the following lines if you need to install the libraries
-# !pip install pandas numpy matplotlib seaborn
-# !pip install statsmodels
-
 # Reading the data
-# file_path = '/california_housing_train.csv'
+# file_path = 'california_housing_train.csv'
 df = pd.read_csv('california_housing_train.csv')
+print(df)
+
 
 # Mean
 mean = df.mean()
@@ -131,7 +128,7 @@ print("\n\n\n\n")
 
 # Box-and-Whisker Plot
 plt.figure(figsize=(10, 6))
-sns.boxplot(data=df)
+sns.boxplot(df)
 plt.title('Box-and-Whisker Plot')
 plt.show()
 
@@ -142,7 +139,7 @@ plt.show()
 
 # Correlation Matrix
 plt.figure(figsize=(10, 8))
-sns.heatmap(correlation, annot=True, cmap='coolwarm', fmt=".2f")
+sns.heatmap(correlation, annot=True, cmap='coolwarm')
 plt.title('Correlation Matrix')
 plt.show()
 
